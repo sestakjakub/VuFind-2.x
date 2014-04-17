@@ -13,8 +13,10 @@
         ?>
         <li>
           <? if (($langCode) == $this->layout()->userLang): ?>
+          <p class="language">
             <img class="langFlag" src="<?=$this->imageLink($langImg)?>" alt="<?=$langName?>" />
             <?=$this->transEsc($langName);?>
+          </p>
           <? else: ?>
           <a class="language" href="<?=$this->url(null, array(), array('query' => $queryParams), true);?>">
             <img class="langFlag" src="<?=$this->imageLink($langImg)?>" alt="<?=$langName?>" />
