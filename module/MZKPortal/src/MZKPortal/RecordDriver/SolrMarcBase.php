@@ -5,6 +5,8 @@ use PortalsCommon\RecordDriver\SolrMarc;
 class SolrMarcBase extends SolrMarc
 {
 
+    protected $numberOfHoldings;
+    
     public function getInstitutionsWithIds() {
         $id = $this->getUniqueID();
         list($source, $localId) = explode('.', $this->getUniqueID());
@@ -13,6 +15,57 @@ class SolrMarcBase extends SolrMarc
 
     public function getHoldLink() {
         return null;
+    }
+    
+    public function getExternalLinks($type = 'link') {
+    
+        list($ins, $id) = explode('.' , $this->getUniqueID());
+
+        if (strcasecmp($type, 'holdings') === 0) {
+            $linkBase = $this->recordConfig->ExternalHoldings->$ins;
+        } else {
+            $linkBase = $this->recordConfig->ExternalLinks->$ins;
+        }
+        $descripion = $this->getHoldingDescription($id);
+        if (empty($linkBase)) {
+            return array(
+                array('institution' => $ins,
+                    'url' => '',
+                    'display' => '',
+                    'id' => $this->getUniqueID(),
+                    'description' => $descripion
+                )
+            );
+        }
+    
+        $finalID = $this->getExternalID();
+        if (!isset($finalID)) {
+            return array(
+                array('institution' => $ins,
+                    'url' => '',
+                    'display' => '',
+                    'id' => $this->getUniqueID(),
+                    'description' => $descripion)
+            );
+        }
+    
+        $confEnd  = $ins . '_end';
+        if (strcasecmp($type, 'holdings') === 0) {
+            $linkEnd  = $this->recordConfig->ExternalHoldings->$confEnd;
+        } else {
+            $linkEnd  = $this->recordConfig->ExternalLinks->$confEnd;
+        }
+    
+        if (!isset($linkEnd) ) $linkEnd = '';
+        $externalLink =  $linkBase . $finalID . $linkEnd;
+        return array(
+            array('institution' => $ins,
+                'url' => $externalLink,
+                'display' => $externalLink,
+                'id' => $id,
+                'description' => $descripion
+            )
+        );
     }
     
     /**
@@ -74,6 +127,9 @@ class SolrMarcBase extends SolrMarc
                 return $year === (int)$filters['year'];
             }
         }
+        if (array_key_exists('id', $filters)) {
+            return $filters['id'] == $holding['*'];
+        }
         return true;
     }
     
@@ -90,6 +146,9 @@ class SolrMarcBase extends SolrMarc
     }
     
     public static function getSheduleOfPeriodics($holding) {
+        if (isset($holding['%'])) {
+            return $holding['%'];
+        }
         if (isset($holding['d'])) {
             return $holding['d'];
         }
@@ -112,11 +171,13 @@ class SolrMarcBase extends SolrMarc
     public function getAgregatedHoldings() {
         $result = array();
         foreach ($this->getHoldings() as $holding) {
-            $inst = $holding['@'];
-            if (!isset($result[$inst])) {
-                $result[$inst] = 0;
+            $id = $this->getAvailabilityID();
+            if (!empty($id)) {
+                if (!isset($result[$id])) {
+                    $result[$id] = 0;
+                }
+                $result[$id]++;
             }
-            $result[$inst]++;
         }        
 
         return $result;
@@ -146,5 +207,36 @@ class SolrMarcBase extends SolrMarc
         }
         
         return $holding_entry;
+    }
+    
+    public function getNumberOfHoldings() {
+        if (!isset($this->numberOfHoldings)) {
+            $this->numberOfHoldings = count($this->getHoldings());
+        }
+        return $this->numberOfHoldings;
+    }
+    
+    public function getHoldingDescription($id) {
+        $holdings = $this->getHoldings(array('id' => $id));
+        if (is_array($holdings) && count($holdings) > 0) {
+            if (isset($holdings[0]['%'])) {
+                return $holdings[0]['%'];
+            }
+        }
+        return '';
+    }
+    
+    public function getHighlightedTitle()
+    {
+        // Don't check for highlighted values if highlighting is disabled:
+        if (!$this->highlight) {
+            return '';
+        }
+        return (isset($this->highlightDetails['title_portaly_txtP'][0]))
+        ? $this->highlightDetails['title_portaly_txtP'][0] : '';
+    }
+    
+    public function getTitle() {
+        return empty($this->fields['title_portaly_txtP']) ? parent::getTitle() : $this->fields['title_portaly_txtP'];
     }
 }

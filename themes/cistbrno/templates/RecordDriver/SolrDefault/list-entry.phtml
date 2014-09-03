@@ -3,6 +3,9 @@
   $this->headScript()->appendFile('obalkyknih/custom.js');
   $recordId = $this->driver->getUniqueID();
   $backLink = $this->serverUrl($this->recordLink()->getUrl($this->driver));
+  $id = $this->driver->getUniqueId();
+  $source = $this->driver->getResourceSource();
+
 ?>
 
 <div class="row-fluid result<?=$this->driver->supportsAjaxStatus()?' ajaxItem':''?>">
@@ -93,43 +96,6 @@
       <? endif; ?>
 
       
-<div>
-        <strong><?=$this->transEsc('Available in libraries')?>:</strong>
-        <? $holdingsCount = $this->driver->getAgregatedHoldings();?>
-        <? $recordLink = $this->recordLink()->getUrl($this->driver);?>
-        <? foreach ($this->driver->getExternalLinks() as $current): ?>
-         <? if (isset($current['url']) && !empty($current['url'])): ?>
-           <? $ins = $current['institution']?>
-           <? $currentHoldingId = $ins . '.' . $current['id']?>
-           <div>
-           <a href="<?=$current['url']?>" class="fulltext external-search-link" target="new">
-             <i class="icon-external-link"></i><?=$this->transEsc(strtoupper($ins))?>
-           </a>
-           <? if (isset($current['description'])):?>
-             <?=$current['description']?>
-           <? endif;?>
-           <? if (isset($holdingsCount[$currentHoldingId])):?>
-           
-           <a href="<?=$recordLink . '/holdings?institution=' . strtoupper($ins) . '#tabnav'?>">
-            <span class="holdings-wrapper small">
-              <span class="holdings-label">
-                <?=$this->transEsc('holdings')?> : 
-              </span>
-              <span class="holdings-count"> 
-                  <?=$holdingsCount[$currentHoldingId]?>
-              </span>
-            </span>
-            </a>
-          <? endif;?>
-          </div>
-          <? else: ?>
-            <a href="<?=$this->recordLink()->related(array('type' => 'bib', 'value' => $current['id']))?>" class="local-search-link">
-              <?=$this->transEsc(strtoupper($current['institution']))?>
-            </a>
-          <? endif; ?>
-        <? endforeach;?>
-      </div>
-      
       <? /* We need to find out if we're supposed to display an OpenURL link ($openUrlActive),
             but even if we don't plan to display the link, we still want to get the $openUrl
             value for use in generating a COinS (Z3988) tag -- see bottom of file.
@@ -156,40 +122,25 @@
     </div>
   </div>
 
-  <div class="span2 noprint">
-    <? /* Display qrcode if appropriate: */ ?>
-    <? if ($QRCode = $this->record($this->driver)->getQRCode("results")): ?>
-      <?
-        // Add JS Variables for QrCode
-        $this->jsTranslations()->addStrings(array('qrcode_hide' => 'qrcode_hide', 'qrcode_show' => 'qrcode_show'));
-      ?>
-      <i class="icon-qrcode"></i> <a href="<?=$this->escapeHtml($QRCode);?>" class="qrcodeLink"><?=$this->transEsc('qrcode_show')?></a>
-      <div class="qrcode hide">
-        <img alt="<?=$this->transEsc('QR Code')?>" class="img-polaroid" src="<?=$this->escapeHtml($QRCode);?>"/>
-      </div><br/>
-    <? endif; ?>
-    
-    <? /* Add to favorites */ ?>
-    <i class="icon-heart"></i> <a href="<?=$this->recordLink()->getActionUrl($this->driver, 'Save')?>" class="save-record modal-link" id="<?=$this->driver->getUniqueId() ?>" title="<?=$this->transEsc('Add to favorites')?>"><?=$this->transEsc('Add to favorites')?></a><br/>
-
-    <? /* Saved lists */ ?>
-    <div class="savedLists alert alert-info hide">
-      <strong><?=$this->transEsc("Saved in")?>:</strong>
+  <div class="span2">
+    <i class="icon-edit"></i> <a href="<?=$this->url('myresearch-edit')?>?id=<?=urlencode($id)?>&amp;source=<?=urlencode($source)?><? if (!is_null($list_id)):?>&amp;list_id=<?=urlencode($list_id)?><? endif; ?>" class="edit tool"><?=$this->transEsc('Edit')?></a><br/>
+    <? /* Use a different delete URL if we're removing from a specific list or the overall favorites: */
+      $deleteUrl = is_null($list_id)
+          ? $this->url('myresearch-favorites')
+          : $this->url('userList', array('id' => $list_id));
+      $deleteUrlGet = $deleteUrl . '?delete=' . urlencode($id) . '&amp;source=' . urlencode($source);
+    ?>
+    <div class="dropdown">
+      <i class="icon-trash"></i> <a class="dropdown-toggle" id="dLabel" role="button" data-toggle="dropdown" data-target="#" href="<?=$deleteUrlGet ?>">
+        <?=$this->transEsc('Delete') ?>
+      </a>
+      <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+        <li><a onClick="$.post('<?=$deleteUrl?>', {'delete':'<?=$this->escapeHtml($id) ?>','source':'<?=$this->escapeHtml($source) ?>','confirm':true},function(){location.reload(true)})" title="<?=$this->transEsc('confirm_delete_brief')?>"><?=$this->transEsc('confirm_dialog_yes')?></a></li>
+        <li><a><?=$this->transEsc('confirm_dialog_no')?></a></li>
+      </ul>
     </div>
 
-    <? /* Hierarchy tree link */ ?>
-    <? $trees = $this->driver->tryMethod('getHierarchyTrees'); if (!empty($trees)): ?>
-      <? foreach ($trees as $hierarchyID => $hierarchyTitle): ?>
-        <div class="hierarchyTreeLink">
-          <input type="hidden" value="<?=$this->escapeHtml($hierarchyID)?>" class="hiddenHierarchyId" />
-          <i class="icon-sitemap"></i>
-          <a class="hierarchyTreeLinkText modal-link" href="<?=$this->recordLink()->getTabUrl($this->driver, 'HierarchyTree')?>?hierarchy=<?=urlencode($hierarchyID)?>#tabnav" title="<?=$this->transEsc('hierarchy_tree')?>">
-            <?=$this->transEsc('hierarchy_view_context')?><? if (count($trees) > 1): ?>: <?=$this->escapeHtml($hierarchyTitle)?><? endif; ?>
-          </a>
-        </div>
-      <? endforeach; ?>
-    <? endif; ?>
   </div>
+  <?=$openUrl?'<span class="Z3988" title="'.$this->escapeHtml($openUrl).'"></span>':''?>
 </div>
 
-<?=$openUrl?'<span class="Z3988" title="'.$this->escapeHtml($openUrl).'"></span>':''?>

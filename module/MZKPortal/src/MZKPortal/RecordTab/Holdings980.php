@@ -2,7 +2,7 @@
 
 namespace MZKPortal\RecordTab;
 
-class Holdings980 extends \MZKCommon\RecordTab\HoldingsILS
+class Holdings980 extends \MZKPortal\RecordTab\HoldingsBase
 {
 
     /**
@@ -11,7 +11,7 @@ class Holdings980 extends \MZKCommon\RecordTab\HoldingsILS
      * @param \VuFind\ILS\Connection|bool $catalog ILS connection to use to check
      * for holdings before displaying the tab; set to false if no check is needed
      */
-    public function __construct($catalog)
+    public function __construct($catalog = null)
     {
         parent::__construct($catalog);
     }
