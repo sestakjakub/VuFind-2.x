@@ -10,7 +10,6 @@ label, input, button, select, textarea {
   font-size: 13px;
 }
 
-/* front page */
 div.frontpage {
   background-color: #F5F5F5;
 }
@@ -45,6 +44,8 @@ div.searchbox-frontpage>form>select {
 div.searchbox-frontpage>form>div>a {
   color: #fff;;
 }
+
+
 
 /* header */
 
