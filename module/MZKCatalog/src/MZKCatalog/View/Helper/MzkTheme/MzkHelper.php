@@ -12,6 +12,12 @@ class MzkHelper extends AbstractHelper {
     }
 
     public function getRestrictionMessage() {
+        if (!is_array($patron = $this->catalogLogin())) {
+            return $patron;
+        }
+        
+        return "ahoj";
+        
         if (isset($this->config->MzkRestriction->enable) && $this->config->MzkRestriction->enable) {
             return $this->config->MzkRestriction->message;
         }
