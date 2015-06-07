@@ -1,2 +1,42 @@
 @import "bootstrap";
 @import "statistics";
+@import "variables";
+
+
+header{
+  @media (max-width: 767px) {
+    margin-bottom: 22px;
+  }
+  margin-bottom: 1px;
+}
+
+.navbar-header .navbar-brand{
+  padding-top: 23px;
+}
+
+#header-collapse{
+  padding-top: 26px;
+}
+
+body {
+  background-repeat: no-repeat;
+  background-image: url('/themes/cpk-design/images/knihovny-bg.gif');
+  background-position: center top;
+}
+
+.well{
+  background-image: url("/themes/cpk-design/images/knihovny-search-bg.png");
+  border: 0px;
+  box-shadow: 0px 0px 0px rgba(0, 0, 0, 0) inset;
+}
+
+@media (max-width: 767px) {
+  #searchForm_type {
+    margin-top: 3px;
+    margin-bottom: 10px;
+  }
+}
+
+ul {
+  padding-left: 14px;
+}

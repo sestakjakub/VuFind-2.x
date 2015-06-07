@@ -6,7 +6,9 @@ if ($user) $libraryCards = $user->getLibraryCards(); ?>
     <span class="sr-only">Toggle navigation</span>
     <i class="fa fa-bars"></i>
   </button>
-  <a role="logo" class="navbar-brand" href="<?=$this->url('home')?>">VuFind</a>
+    <a role="logo" class="navbar-brand"  href="<?=$this->url('home')?>"><img src="<?=$this->imageLink('knihovny-logo.png') ?>"></img></a>
+
+<!--    <a role="logo" class="navbar-brand" href="<?=$this->url('home')?>">VuFind</a> -->
 </div>
 <? if ($this->layout()->searchbox !== false): ?>
   <section class="visible-lg">
