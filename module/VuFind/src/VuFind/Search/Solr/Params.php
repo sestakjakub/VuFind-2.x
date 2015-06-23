@@ -39,9 +39,6 @@ use VuFindSearch\ParamBag;
  */
 class Params extends \VuFind\Search\Base\Params
 {
-    
-    const PER_FIELD_PARAM = 'f.';
-    
     /**
      * Facet result limit
      *
@@ -71,25 +68,18 @@ class Params extends \VuFind\Search\Base\Params
     protected $facetSort = null;
 
     /**
-     * Array of hiearchical facets
+     * Sorting order of single facet by index
      *
      * @var array
      */
-    protected $hierarchicalFacets = array();
-    
+    protected $indexSortedFacets = null;
+
     /**
      * Fields for visual faceting
      *
      * @var string
      */
     protected $pivotFacets = null;
-
-    /**
-     * Array of functions for boosting the query
-     *
-     * @var array
-     */
-    protected $boostFunctions = array();
 
     /**
      * Constructor
@@ -100,7 +90,6 @@ class Params extends \VuFind\Search\Base\Params
     public function __construct($options, \VuFind\Config\PluginManager $configLoader)
     {
         parent::__construct($options, $configLoader);
-
         // Use basic facet limit by default, if set:
         $config = $configLoader->get('facets');
         if (isset($config->Results_Settings->facet_limit)
@@ -108,8 +97,12 @@ class Params extends \VuFind\Search\Base\Params
         ) {
             $this->setFacetLimit($config->Results_Settings->facet_limit);
         }
-        if (isset($config->SpecialFacets->hierarchical)) {
-            $this->setHierarchicalFacets(explode(',', $config->SpecialFacets->hierarchical));
+        if (isset($config->Results_Settings->sorted_by_index)
+            && count($config->Results_Settings->sorted_by_index) > 0
+        ) {
+            $this->setIndexSortedFacets(
+                $config->Results_Settings->sorted_by_index->toArray()
+            );
         }
     }
 
@@ -128,10 +121,13 @@ class Params extends \VuFind\Search\Base\Params
                 $field = substr($field, 1);
             }
             foreach ($filter as $value) {
-                // Special case -- allow trailing wildcards and ranges:
-                if (substr($value, -1) == '*'
+                // Special case -- complex filter, that should be taken as-is:
+                if ($field == '#') {
+                    $q = $value;
+                } else if (substr($value, -1) == '*'
                     || preg_match('/\[[^\]]+\s+TO\s+[^\]]+\]/', $value)
                 ) {
+                    // Special case -- allow trailing wildcards and ranges
                     $q = $field . ':' . $value;
                 } else {
                     $q = $field . ':"' . addcslashes($value, '"\\') . '"';
@@ -161,13 +157,10 @@ class Params extends \VuFind\Search\Base\Params
     {
         // Build a list of facets we want from the index
         $facetSet = [];
+
         if (!empty($this->facetConfig)) {
             $facetSet['limit'] = $this->facetLimit;
             foreach (array_keys($this->facetConfig) as $facetField) {
-                //temporary disabled due fo hierarchical facets problems
-                //if (in_array($facetField, $this->hierarchicalFacets) && $this->facetPrefix == NULL) {
-                //    $facetSet[self::PER_FIELD_PARAM . $facetField . '.facet.prefix'] = '0';
-                //}
                 if ($this->getFacetOperator($facetField) == 'OR') {
                     $facetField = '{!ex=' . $facetField . '_filter}' . $facetField;
                 }
@@ -187,6 +180,9 @@ class Params extends \VuFind\Search\Base\Params
                 // Later Solr versions may have different defaults than earlier ones,
                 // so making this explicit ensures consistent behavior.
                 $facetSet['sort'] = ($this->facetLimit > 0) ? 'count' : 'index';
+            }
+            if ($this->indexSortedFacets != null) {
+                $facetSet['indexSortedFacets'] = $this->indexSortedFacets;
             }
         }
         return $facetSet;
@@ -259,30 +255,17 @@ class Params extends \VuFind\Search\Base\Params
     {
         $this->facetSort = $s;
     }
-    
+
     /**
-     * Set Hierarchical Facets
+     * Set Index Facet Sorting
      *
+     * @param array $s the facets sorted by index
+     *
+     * @return void
      */
-    public function setHierarchicalFacets($facets) {
-        $this->hierarchicalFacets = $facets;
-    }
-    
-    /**
-     * Get Hierarchical Facets
-     *
-     */
-    public function getHierarchicalFacets() {
-        return $this->hierarchicalFacets;
-    }
-    
-    /**
-     *
-     *
-     * @param unknown $function
-     */
-    public function addBoostFunction($function) {
-        $this->boostFunctions[] = $function;
+    public function setIndexSortedFacets(array $s)
+    {
+        $this->indexSortedFacets = $s;
     }
 
     /**
@@ -492,12 +475,16 @@ class Params extends \VuFind\Search\Base\Params
         $facets = $this->getFacetSettings();
         if (!empty($facets)) {
             $backendParams->add('facet', 'true');
-            foreach ($facets as $key => $value) {
-                if (substr($key, 0, strlen(self::PER_FIELD_PARAM)) === self::PER_FIELD_PARAM) {
-                    $backendParams->add($key, $value);
-                } else {
-                    $backendParams->add("facet.{$key}", $value);
+
+            if (isset($facets['indexSortedFacets'])) {
+                foreach ($facets['indexSortedFacets'] as $field) {
+                    $backendParams->add("f.{$field}.facet.sort", 'index');
                 }
+                unset($facets['indexSortedFacets']);
+            }
+
+            foreach ($facets as $key => $value) {
+                    $backendParams->add("facet.{$key}", $value);
             }
             $backendParams->add('facet.mincount', 1);
         }
@@ -544,14 +531,9 @@ class Params extends \VuFind\Search\Base\Params
         }
 
         // Pivot facets for visual results
+
         if ($pf = $this->getPivotFacets()) {
             $backendParams->add('facet.pivot', $pf);
-        }
-
-        if (!empty($this->boostFunctions)) {
-            foreach ($this->boostFunctions as $func) {
-                $backendParams->add('boost', $func);
-            }
         }
 
         return $backendParams;
