@@ -399,6 +399,8 @@ class SolrMarc extends ParentSolrMarc
      */
     public function getObalkyKnihComments()
     {
+        /////////////////////////////////////////////////
+
         $isbnArray = $this->getBibinfoForObalkyKnihV3();
 
         $isbnJson = json_encode($isbnArray);
@@ -415,19 +417,56 @@ class SolrMarc extends ParentSolrMarc
 
         $phpResponse = json_decode($responseBody, true);
 
-        $commentArray = array();
+        $bookid = $phpResponse[0]['book_id'];
 
+        ////////////////////////////////////////////
+
+        $client2 = new \Zend\Http\Client('http://cache.obalkyknih.cz/?add_review=true');
+        $client2->setMethod('POST');
+        $client2->setParameterGet(array(
+            'book_id' => $bookid ,
+            'id' => '1',
+
+        ));
+
+
+        $client2->setParameterPost(array(
+            'review_text' => 'tester',
+
+            'rating_value' => '5'
+        ));
+
+        $response2 = $client2->send();
+
+        echo $response2;
+
+
+//        $responseBody = $response->getBody();
+
+//        $phpResponse2 = json_decode($responseBody, true);
+
+//        var_dump($responseBody);
+///
+//        var_dump($phpResponse2);
+
+
+
+
+
+
+
+        /////////////////////////////
         $i = 0;
 
-        foreach ($phpResponse[0]['reviews'] as $review) {
-            $com = new \stdClass();
-            $com->library = $review['library_name'];
-            $com->created = $review['created'];
-            $com->comment = $review['html_text'];
 
-            $commentArray[$i] = $com;
-            $i ++;
-        }
+
+        $com = new \stdClass();
+        $com->library = "aa";
+        $com->created = "bb";
+        $com->comment = "cc";
+
+        $commentArray[$i] = $com;
+        $i ++;
 
         return $commentArray;
     }

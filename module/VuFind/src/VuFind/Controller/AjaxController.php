@@ -1233,6 +1233,10 @@ class AjaxController extends AbstractBase
         );
         $id = $resource->addComment($comment, $user);
 
+        //tady se bude pridavat komentar
+
+
+
         return $this->output($id, self::STATUS_OK);
     }
 
