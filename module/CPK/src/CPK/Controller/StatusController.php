@@ -22,7 +22,19 @@ class StatusController extends AbstractBase
             )
         );
 
+
+        $table = $this->getTable('status');
+//        $data = array(
+//            'created_on'      => '2007-03-22',
+//            'bug_description' => 'Something wrong',
+//            'bug_status'      => 'NEW'
+//        );
+//
+//        $table->insert($data);
+
         $view->setTemplate('status/home');
+
+
 
         return $view;
     }

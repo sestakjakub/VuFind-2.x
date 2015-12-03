@@ -38,6 +38,7 @@ $config = array(
                     'user' => 'CPK\Db\Table\Factory::getUser'
                 ], /* factories */
                 'invokables' => [
+                    'status' => 'CPK\Db\Table\Status',
                     'session' => 'VuFind\Db\Table\Session'
                 ]
             ], /* db_table */

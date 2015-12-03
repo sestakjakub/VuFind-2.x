@@ -54,4 +54,18 @@ class Factory
             $sm->getServiceLocator()->get('VuFind\Config')->get('config')
         );
     }
+
+    /**
+     * Construct the Status table
+     *
+     * @param ServiceManager $sm Service manager.
+     *
+     * @return Status
+     */
+    public static function getStatus(ServiceManager $sm)
+    {
+        return new Status(
+            $sm->getServiceLocator()->get('VuFind\Config')->get('config')
+        );
+    }
 }
